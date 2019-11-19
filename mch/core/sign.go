@@ -29,7 +29,6 @@ func Sign2(params map[string]string, apiKey string, h hash.Hash) string {
 	if h == nil {
 		h = md5.New()
 	}
-
 	keys := make([]string, 0, len(params))
 	for k := range params {
 		if k == "sign" {

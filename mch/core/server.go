@@ -112,14 +112,15 @@ func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request, query url.V
 	case "POST":
 		requestBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			errorHandler.ServeError(w, r, err)
+			errorHandler.ServeError(w, r, err, c)
 			return
 		}
+		errorHandler.ServeError(w, r, errors.New(string(requestBody)), c)
 		callback.DebugPrintRequestMessage(requestBody)
 
 		msg, err := util.DecodeXMLToMap(bytes.NewReader(requestBody))
 		if err != nil {
-			errorHandler.ServeError(w, r, err)
+			errorHandler.ServeError(w, r, err, c)
 			return
 		}
 
@@ -129,7 +130,7 @@ func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request, query url.V
 				ReturnCode: returnCode,
 				ReturnMsg:  msg["return_msg"],
 			}
-			errorHandler.ServeError(w, r, err)
+			errorHandler.ServeError(w, r, err, c)
 			return
 		}
 
@@ -140,7 +141,7 @@ func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request, query url.V
 				ErrCode:     msg["err_code"],
 				ErrCodeDesc: msg["err_code_des"],
 			}
-			errorHandler.ServeError(w, r, err)
+			errorHandler.ServeError(w, r, err, c)
 			return
 		}
 
@@ -149,7 +150,7 @@ func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request, query url.V
 			haveAppId := msg["appid"]
 			if haveAppId != "" && !security.SecureCompareString(haveAppId, wantAppId) {
 				err = fmt.Errorf("appid mismatch, have: %s, want: %s", haveAppId, wantAppId)
-				errorHandler.ServeError(w, r, err)
+				errorHandler.ServeError(w, r, err, c)
 				return
 			}
 		}
@@ -158,7 +159,7 @@ func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request, query url.V
 			haveMchId := msg["mch_id"]
 			if haveMchId != "" && !security.SecureCompareString(haveMchId, wantMchId) {
 				err = fmt.Errorf("mch_id mismatch, have: %s, want: %s", haveMchId, wantMchId)
-				errorHandler.ServeError(w, r, err)
+				errorHandler.ServeError(w, r, err, c)
 				return
 			}
 		}
@@ -168,7 +169,7 @@ func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request, query url.V
 			haveSubAppId := msg["sub_appid"]
 			if haveSubAppId != "" && !security.SecureCompareString(haveSubAppId, wantSubAppId) {
 				err = fmt.Errorf("sub_appid mismatch, have: %s, want: %s", haveSubAppId, wantSubAppId)
-				errorHandler.ServeError(w, r, err)
+				errorHandler.ServeError(w, r, err, c)
 				return
 			}
 		}
@@ -177,7 +178,7 @@ func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request, query url.V
 			haveSubMchId := msg["sub_mch_id"]
 			if haveSubMchId != "" && !security.SecureCompareString(haveSubMchId, wantSubMchId) {
 				err = fmt.Errorf("sub_mch_id mismatch, have: %s, want: %s", haveSubMchId, wantSubMchId)
-				errorHandler.ServeError(w, r, err)
+				errorHandler.ServeError(w, r, err, c)
 				return
 			}
 		}
@@ -192,18 +193,18 @@ func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request, query url.V
 				wantSignature = Sign2(msg, srv.apiKey, hmac.New(sha256.New, []byte(srv.apiKey)))
 			default:
 				err = fmt.Errorf("unsupported notification sign_type: %s", signType)
-				errorHandler.ServeError(w, r, err)
+				errorHandler.ServeError(w, r, err, c)
 				return
 			}
 			if !security.SecureCompareString(haveSignature, wantSignature) {
 				err = fmt.Errorf("sign mismatch,\nhave: %s,\nwant: %s", haveSignature, wantSignature)
-				errorHandler.ServeError(w, r, err)
+				errorHandler.ServeError(w, r, err, c)
 				return
 			}
 		} else {
 			if _, ok := msg["req_info"]; !ok { // 退款结果通知没有 sign 字段
 				err = ErrNotFoundSign
-				errorHandler.ServeError(w, r, err)
+				errorHandler.ServeError(w, r, err, c)
 				return
 			}
 		}
@@ -223,6 +224,6 @@ func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request, query url.V
 		}
 		srv.handler.ServeMsg(ctx)
 	default:
-		errorHandler.ServeError(w, r, errors.New("Unexpected HTTP Method: "+r.Method))
+		errorHandler.ServeError(w, r, errors.New("Unexpected HTTP Method: "+r.Method), c)
 	}
 }
