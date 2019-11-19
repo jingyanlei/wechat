@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/chanxuehong/util"
@@ -25,6 +26,8 @@ type Context struct {
 	handlerIndex int
 
 	kvs map[string]interface{}
+
+	Ctx context.Context
 }
 
 // IsAborted 返回 true 如果 Context.Abort() 被调用了, 否则返回 false.

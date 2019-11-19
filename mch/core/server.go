@@ -2,6 +2,7 @@ package core
 
 import (
 	"bytes"
+	"context"
 	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha256"
@@ -103,7 +104,7 @@ func (srv *Server) SubMchId() string {
 }
 
 // ServeHTTP 处理微信服务器的回调请求, query 参数可以为 nil.
-func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request, query url.Values) {
+func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request, query url.Values, c context.Context) {
 	callback.DebugPrintRequest(r)
 	errorHandler := srv.errorHandler
 
@@ -217,6 +218,8 @@ func (srv *Server) ServeHTTP(w http.ResponseWriter, r *http.Request, query url.V
 			Msg:         msg,
 
 			handlerIndex: initHandlerIndex,
+
+			Ctx: c,
 		}
 		srv.handler.ServeMsg(ctx)
 	default:
